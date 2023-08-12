@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import json
-import horas as h
-
+import TranslateToHours as h
+import sankey as sk
+from flask import redirect
+# import historydemand as hd
 nombre_file_stations = 'static/data/estaciones.json'
 
 # initialize flask application
@@ -16,9 +18,14 @@ def readData(ruta):
 df = readData("static/data/archivo_combinado.csv")
 
 @app.route("/")
-def home():
+def heatmap():
     return render_template('index.html')
-
+@app.route("/history-dynamic")
+def execute_dash_app():
+    return redirect("http://127.0.0.1:8050/")
+@app.route("/trayectorias")
+def trayectorias():
+    return render_template('trayectorias.html')
 @app.route("/get-stations", methods=['POST', 'GET'])
 def get_stations():
     global nombre_file_stations
@@ -50,7 +57,23 @@ def get_stations():
     else:
         with open(nombre_file_stations) as fp:
             return json.load(fp)
-
+@app.route("/sankey", methods=['POST', 'GET'])
+def sankey():
+    if request.method == 'POST':
+        ids = request.form['estaciones-input']
+        ids = ids.split(",")
+        ids = [int(i) for i in ids]
+        mes = request.form.get('mes')
+        dia = request.form.get('dia')
+        hora = request.form.get('hora')
+        if(hora != 'opcion'):
+            sk.generate_json1(ids,mes,dia,hora)
+        else :
+            sk.generate_json(ids, mes ,dia)
+        return render_template('index.html')
+    else:
+        with open('static/data/output.json') as fp:
+            return json.load(fp)
 def process_json(json_data, option, year, month=None):
     processed_data = {}
 
